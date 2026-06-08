@@ -3,6 +3,8 @@ package com.library.library_management_system.service;
 import com.library.library_management_system.dto.request.AuthorRequestDTO;
 import com.library.library_management_system.dto.response.AuthorResponseDTO;
 import com.library.library_management_system.entity.Author;
+import com.library.library_management_system.exception.BusinessRuleException;
+import com.library.library_management_system.exception.EntityNotFoundException;
 import com.library.library_management_system.repository.AuthorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,14 +39,14 @@ public class AuthorService {
     public AuthorResponseDTO getAuthorById(Long id) {
         log.info("Fetching author with id: {}", id);
         Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Author not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
         return mapToDTO(author);
     }
 
     public AuthorResponseDTO updateAuthor(Long id, AuthorRequestDTO dto) {
         log.info("Updating author with id: {}", id);
         Author author = authorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Author not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
         author.setName(dto.getName());
         author.setBiography(dto.getBiography());
         return mapToDTO(authorRepository.save(author));
@@ -52,6 +54,11 @@ public class AuthorService {
 
     public void deleteAuthor(Long id) {
         log.info("Deleting author with id: {}", id);
+        Author author = authorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
+        if (author.getBooks() != null && !author.getBooks().isEmpty()) {
+            throw new BusinessRuleException("Cannot delete author with id: " + id + " because they have books in the system");
+        }
         authorRepository.deleteById(id);
     }
 

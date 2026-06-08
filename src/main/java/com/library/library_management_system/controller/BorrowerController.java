@@ -1,6 +1,7 @@
 package com.library.library_management_system.controller;
 
 import com.library.library_management_system.dto.request.BorrowerRequestDTO;
+import com.library.library_management_system.dto.response.ApiResponse;
 import com.library.library_management_system.dto.response.BorrowerResponseDTO;
 import com.library.library_management_system.service.BorrowerService;
 import jakarta.validation.Valid;
@@ -17,28 +18,28 @@ public class BorrowerController {
     private final BorrowerService borrowerService;
 
     @PostMapping
-    public ResponseEntity<BorrowerResponseDTO> createBorrower(@Valid @RequestBody BorrowerRequestDTO dto) {
-        return ResponseEntity.ok(borrowerService.createBorrower(dto));
+    public ResponseEntity<ApiResponse<BorrowerResponseDTO>> createBorrower(@Valid @RequestBody BorrowerRequestDTO dto) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Borrower created successfully", borrowerService.createBorrower(dto)));
     }
 
     @GetMapping
-    public ResponseEntity<List<BorrowerResponseDTO>> getAllBorrowers() {
-        return ResponseEntity.ok(borrowerService.getAllBorrowers());
+    public ResponseEntity<ApiResponse<List<BorrowerResponseDTO>>> getAllBorrowers() {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Borrowers retrieved successfully", borrowerService.getAllBorrowers()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BorrowerResponseDTO> getBorrowerById(@PathVariable Long id) {
-        return ResponseEntity.ok(borrowerService.getBorrowerById(id));
+    public ResponseEntity<ApiResponse<BorrowerResponseDTO>> getBorrowerById(@PathVariable Long id) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Borrower retrieved successfully", borrowerService.getBorrowerById(id)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BorrowerResponseDTO> updateBorrower(@PathVariable Long id, @Valid @RequestBody BorrowerRequestDTO dto) {
-        return ResponseEntity.ok(borrowerService.updateBorrower(id, dto));
+    public ResponseEntity<ApiResponse<BorrowerResponseDTO>> updateBorrower(@PathVariable Long id, @Valid @RequestBody BorrowerRequestDTO dto) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Borrower updated successfully", borrowerService.updateBorrower(id, dto)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBorrower(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteBorrower(@PathVariable Long id) {
         borrowerService.deleteBorrower(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new ApiResponse<>(true, "Borrower deleted successfully", null));
     }
 }

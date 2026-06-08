@@ -5,6 +5,8 @@ import com.library.library_management_system.dto.response.BookResponseDTO;
 import com.library.library_management_system.entity.Author;
 import com.library.library_management_system.entity.Book;
 import com.library.library_management_system.enums.Category;
+import com.library.library_management_system.exception.BusinessRuleException;
+import com.library.library_management_system.exception.EntityNotFoundException;
 import com.library.library_management_system.repository.AuthorRepository;
 import com.library.library_management_system.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,17 +29,11 @@ public class BookService {
 
         Author author;
 
-        // Try to fetch author from Open Library using ISBN
         String fetchedAuthorName = openLibraryService.fetchAuthorName(dto.getIsbn());
 
         if (fetchedAuthorName != null) {
-            // Check if author already exists in our database
-            author = authorRepository.findAll()
-                    .stream()
-                    .filter(a -> a.getName().equalsIgnoreCase(fetchedAuthorName))
-                    .findFirst()
+            author = authorRepository.findByNameIgnoreCase(fetchedAuthorName)
                     .orElseGet(() -> {
-                        // Create new author from Open Library data
                         log.info("Creating new author from Open Library: {}", fetchedAuthorName);
                         Author newAuthor = new Author();
                         newAuthor.setName(fetchedAuthorName);
@@ -45,10 +41,9 @@ public class BookService {
                         return authorRepository.save(newAuthor);
                     });
         } else {
-            // Fall back to authorId provided in request
             log.info("Open Library did not return author, using provided authorId: {}", dto.getAuthorId());
             author = authorRepository.findById(dto.getAuthorId())
-                    .orElseThrow(() -> new RuntimeException("Author not found with id: " + dto.getAuthorId()));
+                    .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + dto.getAuthorId()));
         }
 
         Book book = new Book();
@@ -72,16 +67,16 @@ public class BookService {
     public BookResponseDTO getBookById(Long id) {
         log.info("Fetching book with id: {}", id);
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with id: " + id));
         return mapToDTO(book);
     }
 
     public BookResponseDTO updateBook(Long id, BookRequestDTO dto) {
         log.info("Updating book with id: {}", id);
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with id: " + id));
         Author author = authorRepository.findById(dto.getAuthorId())
-                .orElseThrow(() -> new RuntimeException("Author not found with id: " + dto.getAuthorId()));
+                .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + dto.getAuthorId()));
         book.setTitle(dto.getTitle());
         book.setIsbn(dto.getIsbn());
         book.setCategory(dto.getCategory());
@@ -91,6 +86,11 @@ public class BookService {
 
     public void deleteBook(Long id) {
         log.info("Deleting book with id: {}", id);
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with id: " + id));
+        if (!book.isAvailable()) {
+            throw new BusinessRuleException("Cannot delete book with id: " + id + " because it is currently borrowed");
+        }
         bookRepository.deleteById(id);
     }
 

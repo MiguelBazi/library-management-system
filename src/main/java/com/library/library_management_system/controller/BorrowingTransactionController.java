@@ -1,6 +1,7 @@
 package com.library.library_management_system.controller;
 
 import com.library.library_management_system.dto.request.BorrowingTransactionRequestDTO;
+import com.library.library_management_system.dto.response.ApiResponse;
 import com.library.library_management_system.dto.response.BorrowingTransactionResponseDTO;
 import com.library.library_management_system.service.BorrowingTransactionService;
 import jakarta.validation.Valid;
@@ -17,22 +18,22 @@ public class BorrowingTransactionController {
     private final BorrowingTransactionService transactionService;
 
     @PostMapping("/borrow")
-    public ResponseEntity<BorrowingTransactionResponseDTO> borrowBook(@Valid @RequestBody BorrowingTransactionRequestDTO dto) {
-        return ResponseEntity.ok(transactionService.borrowBook(dto));
+    public ResponseEntity<ApiResponse<BorrowingTransactionResponseDTO>> borrowBook(@Valid @RequestBody BorrowingTransactionRequestDTO dto) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Book borrowed successfully", transactionService.borrowBook(dto)));
     }
 
     @PutMapping("/return/{transactionId}")
-    public ResponseEntity<BorrowingTransactionResponseDTO> returnBook(@PathVariable Long transactionId) {
-        return ResponseEntity.ok(transactionService.returnBook(transactionId));
+    public ResponseEntity<ApiResponse<BorrowingTransactionResponseDTO>> returnBook(@PathVariable Long transactionId) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Book returned successfully", transactionService.returnBook(transactionId)));
     }
 
     @GetMapping
-    public ResponseEntity<List<BorrowingTransactionResponseDTO>> getAllTransactions() {
-        return ResponseEntity.ok(transactionService.getAllTransactions());
+    public ResponseEntity<ApiResponse<List<BorrowingTransactionResponseDTO>>> getAllTransactions() {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Transactions retrieved successfully", transactionService.getAllTransactions()));
     }
 
     @GetMapping("/borrower/{borrowerId}")
-    public ResponseEntity<List<BorrowingTransactionResponseDTO>> getTransactionsByBorrower(@PathVariable Long borrowerId) {
-        return ResponseEntity.ok(transactionService.getTransactionsByBorrower(borrowerId));
+    public ResponseEntity<ApiResponse<List<BorrowingTransactionResponseDTO>>> getTransactionsByBorrower(@PathVariable Long borrowerId) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Transactions retrieved successfully", transactionService.getTransactionsByBorrower(borrowerId)));
     }
 }
