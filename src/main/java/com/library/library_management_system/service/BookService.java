@@ -11,24 +11,27 @@ import com.library.library_management_system.repository.AuthorRepository;
 import com.library.library_management_system.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BookService {
+public class BookService implements IBookService {
 
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
     private final OpenLibraryService openLibraryService;
+    private final ModelMapper modelMapper;
 
     public BookResponseDTO createBook(BookRequestDTO dto) {
         log.info("Creating book with title: {}", dto.getTitle());
 
         Author author;
-
         String fetchedAuthorName = openLibraryService.fetchAuthorName(dto.getIsbn());
 
         if (fetchedAuthorName != null) {
@@ -53,22 +56,28 @@ public class BookService {
         book.setAuthor(author);
         book.setAvailable(true);
 
-        return mapToDTO(bookRepository.save(book));
+        BookResponseDTO response = modelMapper.map(bookRepository.save(book), BookResponseDTO.class);
+        response.setAuthorName(author.getName());
+        return response;
     }
 
-    public List<BookResponseDTO> getAllBooks() {
-        log.info("Fetching all books");
-        return bookRepository.findAll()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+    public Page<BookResponseDTO> getAllBooks(int page, int size) {
+        log.info("Fetching all books page: {} size: {}", page, size);
+        return bookRepository.findAll(PageRequest.of(page, size))
+                .map(book -> {
+                    BookResponseDTO dto = modelMapper.map(book, BookResponseDTO.class);
+                    dto.setAuthorName(book.getAuthor().getName());
+                    return dto;
+                });
     }
 
     public BookResponseDTO getBookById(Long id) {
         log.info("Fetching book with id: {}", id);
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Book not found with id: " + id));
-        return mapToDTO(book);
+        BookResponseDTO dto = modelMapper.map(book, BookResponseDTO.class);
+        dto.setAuthorName(book.getAuthor().getName());
+        return dto;
     }
 
     public BookResponseDTO updateBook(Long id, BookRequestDTO dto) {
@@ -81,7 +90,9 @@ public class BookService {
         book.setIsbn(dto.getIsbn());
         book.setCategory(dto.getCategory());
         book.setAuthor(author);
-        return mapToDTO(bookRepository.save(book));
+        BookResponseDTO response = modelMapper.map(bookRepository.save(book), BookResponseDTO.class);
+        response.setAuthorName(author.getName());
+        return response;
     }
 
     public void deleteBook(Long id) {
@@ -98,7 +109,11 @@ public class BookService {
         log.info("Searching books by title: {}", title);
         return bookRepository.findByTitleContainingIgnoreCase(title)
                 .stream()
-                .map(this::mapToDTO)
+                .map(book -> {
+                    BookResponseDTO dto = modelMapper.map(book, BookResponseDTO.class);
+                    dto.setAuthorName(book.getAuthor().getName());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -106,7 +121,11 @@ public class BookService {
         log.info("Searching books by category: {}", category);
         return bookRepository.findByCategory(category)
                 .stream()
-                .map(this::mapToDTO)
+                .map(book -> {
+                    BookResponseDTO dto = modelMapper.map(book, BookResponseDTO.class);
+                    dto.setAuthorName(book.getAuthor().getName());
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -114,18 +133,11 @@ public class BookService {
         log.info("Searching books by author id: {}", authorId);
         return bookRepository.findByAuthorId(authorId)
                 .stream()
-                .map(this::mapToDTO)
+                .map(book -> {
+                    BookResponseDTO dto = modelMapper.map(book, BookResponseDTO.class);
+                    dto.setAuthorName(book.getAuthor().getName());
+                    return dto;
+                })
                 .collect(Collectors.toList());
-    }
-
-    private BookResponseDTO mapToDTO(Book book) {
-        BookResponseDTO dto = new BookResponseDTO();
-        dto.setId(book.getId());
-        dto.setTitle(book.getTitle());
-        dto.setIsbn(book.getIsbn());
-        dto.setCategory(book.getCategory());
-        dto.setAuthorName(book.getAuthor().getName());
-        dto.setAvailable(book.isAvailable());
-        return dto;
     }
 }

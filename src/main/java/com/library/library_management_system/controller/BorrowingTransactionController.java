@@ -4,18 +4,20 @@ import com.library.library_management_system.dto.request.BorrowingTransactionReq
 import com.library.library_management_system.dto.response.ApiResponse;
 import com.library.library_management_system.dto.response.BorrowingTransactionResponseDTO;
 import com.library.library_management_system.service.BorrowingTransactionService;
+import com.library.library_management_system.service.IBorrowingTransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/transactions")
 @RequiredArgsConstructor
 public class BorrowingTransactionController {
 
-    private final BorrowingTransactionService transactionService;
+    private final IBorrowingTransactionService transactionService;
 
     @PostMapping("/borrow")
     public ResponseEntity<ApiResponse<BorrowingTransactionResponseDTO>> borrowBook(@Valid @RequestBody BorrowingTransactionRequestDTO dto) {
@@ -28,8 +30,10 @@ public class BorrowingTransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BorrowingTransactionResponseDTO>>> getAllTransactions() {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Transactions retrieved successfully", transactionService.getAllTransactions()));
+    public ResponseEntity<ApiResponse<Page<BorrowingTransactionResponseDTO>>> getAllTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Transactions retrieved successfully", transactionService.getAllTransactions(page, size)));
     }
 
     @GetMapping("/borrower/{borrowerId}")

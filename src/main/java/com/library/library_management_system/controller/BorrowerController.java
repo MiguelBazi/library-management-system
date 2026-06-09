@@ -4,18 +4,20 @@ import com.library.library_management_system.dto.request.BorrowerRequestDTO;
 import com.library.library_management_system.dto.response.ApiResponse;
 import com.library.library_management_system.dto.response.BorrowerResponseDTO;
 import com.library.library_management_system.service.BorrowerService;
+import com.library.library_management_system.service.IBorrowerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/borrowers")
 @RequiredArgsConstructor
 public class BorrowerController {
 
-    private final BorrowerService borrowerService;
+    private final IBorrowerService borrowerService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<BorrowerResponseDTO>> createBorrower(@Valid @RequestBody BorrowerRequestDTO dto) {
@@ -23,8 +25,10 @@ public class BorrowerController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BorrowerResponseDTO>>> getAllBorrowers() {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Borrowers retrieved successfully", borrowerService.getAllBorrowers()));
+    public ResponseEntity<ApiResponse<Page<BorrowerResponseDTO>>> getAllBorrowers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Borrowers retrieved successfully", borrowerService.getAllBorrowers(page, size)));
     }
 
     @GetMapping("/{id}")

@@ -5,18 +5,20 @@ import com.library.library_management_system.dto.response.ApiResponse;
 import com.library.library_management_system.dto.response.BookResponseDTO;
 import com.library.library_management_system.enums.Category;
 import com.library.library_management_system.service.BookService;
+import com.library.library_management_system.service.IBookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/books")
 @RequiredArgsConstructor
 public class BookController {
 
-    private final BookService bookService;
+    private final IBookService bookService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<BookResponseDTO>> createBook(@Valid @RequestBody BookRequestDTO dto) {
@@ -24,8 +26,10 @@ public class BookController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BookResponseDTO>>> getAllBooks() {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Books retrieved successfully", bookService.getAllBooks()));
+    public ResponseEntity<ApiResponse<Page<BookResponseDTO>>> getAllBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Books retrieved successfully", bookService.getAllBooks(page, size)));
     }
 
     @GetMapping("/{id}")

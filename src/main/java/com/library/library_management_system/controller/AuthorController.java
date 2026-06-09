@@ -4,18 +4,20 @@ import com.library.library_management_system.dto.request.AuthorRequestDTO;
 import com.library.library_management_system.dto.response.ApiResponse;
 import com.library.library_management_system.dto.response.AuthorResponseDTO;
 import com.library.library_management_system.service.AuthorService;
+import com.library.library_management_system.service.IAuthorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/authors")
 @RequiredArgsConstructor
 public class AuthorController {
 
-    private final AuthorService authorService;
+    private final IAuthorService authorService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<AuthorResponseDTO>> createAuthor(@Valid @RequestBody AuthorRequestDTO dto) {
@@ -23,8 +25,10 @@ public class AuthorController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AuthorResponseDTO>>> getAllAuthors() {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Authors retrieved successfully", authorService.getAllAuthors()));
+    public ResponseEntity<ApiResponse<Page<AuthorResponseDTO>>> getAllAuthors(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Authors retrieved successfully", authorService.getAllAuthors(page, size)));
     }
 
     @GetMapping("/{id}")

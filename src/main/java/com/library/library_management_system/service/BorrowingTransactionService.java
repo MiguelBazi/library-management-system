@@ -14,6 +14,7 @@ import com.library.library_management_system.repository.BorrowerRepository;
 import com.library.library_management_system.repository.BorrowingTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,16 +23,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BorrowingTransactionService {
+public class BorrowingTransactionService implements IBorrowingTransactionService {
 
     private final BorrowingTransactionRepository transactionRepository;
     private final BookRepository bookRepository;
     private final BorrowerRepository borrowerRepository;
     private final EmailNotificationClient emailNotificationClient;
+    private final ModelMapper modelMapper;
 
     @Value("${borrower.transaction.limit}")
     private int transactionLimit;
@@ -82,7 +86,10 @@ public class BorrowingTransactionService {
             log.error("Failed to send email notification: {}", e.getMessage());
         }
 
-        return mapToDTO(saved);
+        BorrowingTransactionResponseDTO response = modelMapper.map(saved, BorrowingTransactionResponseDTO.class);
+        response.setBookTitle(book.getTitle());
+        response.setBorrowerName(borrower.getName());
+        return response;
     }
 
     @Transactional
@@ -103,33 +110,35 @@ public class BorrowingTransactionService {
         transaction.setReturnDate(LocalDate.now());
         transaction.setStatus(TransactionStatus.RETURNED);
 
-        return mapToDTO(transactionRepository.save(transaction));
+        BorrowingTransaction saved = transactionRepository.save(transaction);
+        BorrowingTransactionResponseDTO response = modelMapper.map(saved, BorrowingTransactionResponseDTO.class);
+        response.setBookTitle(book.getTitle());
+        response.setBorrowerName(transaction.getBorrower().getName());
+        return response;
     }
 
-    public List<BorrowingTransactionResponseDTO> getAllTransactions() {
-        log.info("Fetching all transactions");
-        return transactionRepository.findAll()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+    @Override
+    public Page<BorrowingTransactionResponseDTO> getAllTransactions(int page, int size) {
+        log.info("Fetching all transactions page: {} size: {}", page, size);
+        return transactionRepository.findAll(PageRequest.of(page, size))
+                .map(transaction -> {
+                    BorrowingTransactionResponseDTO dto = modelMapper.map(transaction, BorrowingTransactionResponseDTO.class);
+                    dto.setBookTitle(transaction.getBook().getTitle());
+                    dto.setBorrowerName(transaction.getBorrower().getName());
+                    return dto;
+                });
     }
 
     public List<BorrowingTransactionResponseDTO> getTransactionsByBorrower(Long borrowerId) {
         log.info("Fetching transactions for borrower id: {}", borrowerId);
         return transactionRepository.findByBorrowerId(borrowerId)
                 .stream()
-                .map(this::mapToDTO)
+                .map(transaction -> {
+                    BorrowingTransactionResponseDTO dto = modelMapper.map(transaction, BorrowingTransactionResponseDTO.class);
+                    dto.setBookTitle(transaction.getBook().getTitle());
+                    dto.setBorrowerName(transaction.getBorrower().getName());
+                    return dto;
+                })
                 .collect(Collectors.toList());
-    }
-
-    private BorrowingTransactionResponseDTO mapToDTO(BorrowingTransaction transaction) {
-        BorrowingTransactionResponseDTO dto = new BorrowingTransactionResponseDTO();
-        dto.setId(transaction.getId());
-        dto.setBookTitle(transaction.getBook().getTitle());
-        dto.setBorrowerName(transaction.getBorrower().getName());
-        dto.setBorrowDate(transaction.getBorrowDate());
-        dto.setReturnDate(transaction.getReturnDate());
-        dto.setStatus(transaction.getStatus());
-        return dto;
     }
 }

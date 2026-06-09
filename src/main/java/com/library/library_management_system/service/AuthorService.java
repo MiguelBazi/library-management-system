@@ -8,48 +8,46 @@ import com.library.library_management_system.exception.EntityNotFoundException;
 import com.library.library_management_system.repository.AuthorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuthorService {
+public class AuthorService implements IAuthorService {
 
     private final AuthorRepository authorRepository;
+    private final ModelMapper modelMapper;
 
     public AuthorResponseDTO createAuthor(AuthorRequestDTO dto) {
         log.info("Creating author with name: {}", dto.getName());
-        Author author = new Author();
-        author.setName(dto.getName());
-        author.setBiography(dto.getBiography());
-        Author saved = authorRepository.save(author);
-        return mapToDTO(saved);
+        Author author = modelMapper.map(dto, Author.class);
+        return modelMapper.map(authorRepository.save(author), AuthorResponseDTO.class);
     }
 
-    public List<AuthorResponseDTO> getAllAuthors() {
-        log.info("Fetching all authors");
-        return authorRepository.findAll()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+    public Page<AuthorResponseDTO> getAllAuthors(int page, int size) {
+        log.info("Fetching all authors page: {} size: {}", page, size);
+        return authorRepository.findAll(PageRequest.of(page, size))
+                .map(author -> modelMapper.map(author, AuthorResponseDTO.class));
     }
 
     public AuthorResponseDTO getAuthorById(Long id) {
         log.info("Fetching author with id: {}", id);
         Author author = authorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
-        return mapToDTO(author);
+        return modelMapper.map(author, AuthorResponseDTO.class);
     }
 
     public AuthorResponseDTO updateAuthor(Long id, AuthorRequestDTO dto) {
         log.info("Updating author with id: {}", id);
         Author author = authorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
-        author.setName(dto.getName());
-        author.setBiography(dto.getBiography());
-        return mapToDTO(authorRepository.save(author));
+        modelMapper.map(dto, author);
+        return modelMapper.map(authorRepository.save(author), AuthorResponseDTO.class);
     }
 
     public void deleteAuthor(Long id) {
@@ -60,13 +58,5 @@ public class AuthorService {
             throw new BusinessRuleException("Cannot delete author with id: " + id + " because they have books in the system");
         }
         authorRepository.deleteById(id);
-    }
-
-    private AuthorResponseDTO mapToDTO(Author author) {
-        AuthorResponseDTO dto = new AuthorResponseDTO();
-        dto.setId(author.getId());
-        dto.setName(author.getName());
-        dto.setBiography(author.getBiography());
-        return dto;
     }
 }
